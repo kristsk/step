@@ -69,3 +69,31 @@ Also you can use group with a dynamic number of common tasks.
     );
 
 *Note* that we both call `this.group()` and `group()`.  The first reserves a slot in the parameters of the next step, then calling `group()` generates the individual callbacks and increments the internal counter.
+
+If you pass a function named `haltAlways` as the first argument to Step, it will be called whenever an error is encountered, after which Step will stop. The error is passed as the first argument to `haltAlways`.
+
+    Step(
+      function haltAlways(err) {
+        console.error(err.message);
+        process.exit(1);
+      },
+      function readDir() {
+        fs.readdir(__dirname, this);
+      },
+      function readFiles(err, results) {
+        // Note: no more error handling here.
+        // Create a new group
+        var group = this.group();
+        results.forEach(function (filename) {
+          if (/\.js$/.test(filename)) {
+            fs.readFile(__dirname + "/" + filename, 'utf8', group());
+          }
+        });
+      },
+      function showAll(err , files) {
+        // No error handling here either.
+        sys.p(files);
+      }
+    );
+
+This would be useful if you use Step in a build process where every error is fatal, and you don't wish to add error handling to each step.
